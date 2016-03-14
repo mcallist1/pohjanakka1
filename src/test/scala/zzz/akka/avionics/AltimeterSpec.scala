@@ -1,9 +1,5 @@
 package zzz.akka.avionics
 
-/**
-  * Created by murmeister on 13.3.2016.
-  */
-
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestKit, TestLatch, ImplicitSender}
 import scala.concurrent.duration._

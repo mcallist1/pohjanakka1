@@ -1,8 +1,5 @@
 package zzz.akka.avionics
 
-/**
-  * Created by murmeister on 12.3.2016.
-  */
 import akka.actor.{Props, Actor, ActorSystem}
 import akka.testkit.{TestKit, TestActorRef, ImplicitSender}
 import org.scalatest.{WordSpecLike, BeforeAndAfterAll}

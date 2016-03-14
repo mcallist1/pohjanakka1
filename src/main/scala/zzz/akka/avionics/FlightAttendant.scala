@@ -1,8 +1,5 @@
 package zzz.akka.avionics
 
-/**
-  * Created by murmeister on 13.3.2016.
-  */
 import akka.actor.Actor
 import scala.concurrent.duration._
 
@@ -10,13 +7,13 @@ import scala.concurrent.duration._
 trait AttendantResponsiveness {
   val maxResponseTimeMS: Int
   def responseDuration = scala.util.Random.nextInt(maxResponseTimeMS).millis
-  // Default or fallback responseTime is 5 minutes.
-  def apply() = new FlightAttendant with AttendantResponsiveness { val maxResponseTimeMS = 300000 }
 }
 
 object FlightAttendant {
   case class GetDrink(drinkname: String)
   case class Drink(drinkname: String)
+  // Default or fallback responseTime is 5 minutes.
+  def apply() = new FlightAttendant with AttendantResponsiveness { val maxResponseTimeMS = 300000 }
 }
 
 class FlightAttendant extends Actor {

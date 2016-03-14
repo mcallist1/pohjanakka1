@@ -1,6 +1,3 @@
-/**
-  * Created by murmeister on 11.3.2016.
-  */
 
 import akka.actor.{Actor, Props, ActorSystem}
 

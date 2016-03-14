@@ -1,9 +1,5 @@
 package zzz.akka.avionics
 
-/**
-  * Created by murmeister on 12.3.2016.
-  */
-
 import akka.actor.{Actor, ActorRef}
 
 // ControlSurfaces-companion-object offers the messages that can be sent

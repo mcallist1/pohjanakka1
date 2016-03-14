@@ -27,7 +27,20 @@ I have IDEA set up to use custom SBT-launcher rather than the one shipped by Int
 --
 You can find a repo on GitHub that has most of the source-code, but anyway I am typing in all the code from the print copy of the book, as that is the best way to learn. Also IMAO you can learn a lot about Scala (or many other languages) by using IntelliJ or Eclipse when typing in code, due to their nice "predictive input" and other features. I remember the days before Eclipse (and before Google-search/Stackoverflow), coding was much harder back then.
 
+--
+Code-differences / any bugs I found between book publication date and spring 2016 (spring as in the season, not as in the popular DI-framework):
 
-The code-differences between publication date and March 2016:
-the syntax "system.shutdown()" for ActorSystem is deprecated, for me it resulted in compile-time failure (also in non-IDE mode), but IDE's replacement-suggestion: "system.terminate()" works fine.
+[1] the syntax "system.shutdown()" for ActorSystem is deprecated, for me it resulted in compile-time failure (also in non-IDE mode), but IDE's replacement-suggestion: "system.terminate()" works fine.
+
+[2] ActorContext.actorFor - all variants are deprecated. See Stackoverflow for useful comments including an answer by Derek Wyatt, and see danluu's GitHub implementation for a workaround:
+http://stackoverflow.com/questions/22951549/how-do-you-replace-actorfor
+https://github.com/danluu/akka-concurrency-wyatt/blob/master/src/main/scala/Plane.scala
+One workaround could be to use .actorSelection instead... this could be one way (in receive-method of class Pilot:
+```
+case ReadyToGo => 
+      context.parent ! GiveMeControl
+      //copilot = context.actorFor("../" + copilotName)  //deprecated, use actorSelection instead:
+      for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield copilot
+      for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot
+```
 

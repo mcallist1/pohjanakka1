@@ -1,9 +1,5 @@
 package zzz.akka.avionics
 
-/**
-  * Created by murmeister on 12.3.2016.
-  */
-
 import akka.actor.{Props, Actor, ActorSystem, ActorLogging}
 import scala.concurrent.duration._
 
