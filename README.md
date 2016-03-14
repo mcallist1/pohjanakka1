@@ -4,17 +4,17 @@ Rather than use giter8 and vim, neither of which i know much about, I prefer to 
 
 Anyway you can download Activator from http://www.lightbend.com/activator/download
 
-Then use the advice for getting an Akka project template/skeleton:
+Then use the advice for getting an Akka project template/skeleton setup locally (various Options for doing this):
 http://www.lightbend.com/activator/template/hello-akka
 
-Option 1 is a good idea if you have never used Akka before, so in the "Activator Web IDE" you get a wee tutorial n everything.
+Option 1 (i.e. use Activator UI) is a good idea if you have never looked at Akka before, so in the "Activator Web IDE" you get a wee tutorial n everything.
 
 Anyway I used Option 3 to get started:
-$ activator new pohjanakka1 hello-akka
+```$ activator new pohjanakka1 hello-akka```
 
-Still a good idea to use the "sbt run" and "sbt test" commands on your new project, just to check the template is a working one. Those two commands you can use on your own code later, useful when you want to e.g. run some app, or do tests.
+It's a good idea to use the "sbt run" and "sbt test" commands on your new project immediately, just to check the template is a working one. Those two commands you can use on your own code later, useful when you want to e.g. run some app, or do tests.
 
-After that you can get rid of the template Scala files for Greeter-sample-app and so on, including the TestSpec files (and delete the Java files).
+After that you can get rid of the template Scala files for Greeter-sample-app and so on, including the TestSpec files (and delete the Java files). Or you can keep them there for a while, only effect is that e.g. "sbt run" will ask you which codeset you want to run from your various executable classes.
 
 You can code your Scala examples in project path: src/main/scala and your tests into src/test/scala .
 
