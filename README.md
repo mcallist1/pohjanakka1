@@ -44,3 +44,5 @@ case ReadyToGo =>
       for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot
 ```
 
+[3] The Autopilot class is not defined (at least not in Chapter 7), so comment out the following line in Plane.scala:
+```val autopilot = context.actorOf(Props[Autopilot], "Autopilot")```
