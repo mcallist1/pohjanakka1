@@ -12,6 +12,11 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
+trait PilotProvider {
+  def newPilot: Actor = new Pilot
+  def newCopilot: Actor = new Copilot
+  // def newAutopilot: Actor = new Autopilot
+}
 
 object Pilots {
   case object ReadyToGo
@@ -21,12 +26,12 @@ object Pilots {
 class Pilot extends Actor {
   import Pilots._
   import Plane._
-  // timeout needed for using ActorContext.ActorSelection:
+  // timeout needed for using ActorContext.actorSelection:
   implicit val timeout = Timeout(2.seconds)
 
   var controls: ActorRef = context.system.deadLetters
   var copilot: ActorRef = context.system.deadLetters
-  //var autopilot: ActorRef = context.system.deadLetters
+  //var autopilot: ActorRef = context.system.deadLetters   // Autopilot not implemented
 
   val copilotName = context.system.settings.config.getString(
     "zzz.akka.avionics.flightcrew.copilotName")
@@ -36,7 +41,7 @@ class Pilot extends Actor {
       context.parent ! GiveMeControl
       //copilot = context.actorFor("../" + copilotName)  //deprecated, use actorSelection instead:
       for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield copilot
-      //for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot
+      //for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot     // Autopilot not implemented
 
     case Controls(controlSurfaces) =>
       controls = controlSurfaces
@@ -59,6 +64,6 @@ class Copilot extends Actor {
     case ReadyToGo =>
       //copilot = context.actorFor("../" + copilotName)  //deprecated, use actorSelection instead:
       for (cop <- context.actorSelection("../" + pilotName).resolveOne()) yield pilot
-      //for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot
+      //for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot     // Autopilot not implemented
   }
 }

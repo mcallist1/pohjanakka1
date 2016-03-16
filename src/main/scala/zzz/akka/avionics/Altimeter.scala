@@ -3,6 +3,10 @@ package zzz.akka.avionics
 import akka.actor.{Props, Actor, ActorSystem, ActorLogging}
 import scala.concurrent.duration._
 
+trait AltimeterProvider {
+  def newAltimeter: Actor = Altimeter()
+}
+
 object Altimeter {
 
   // Received by Altimeter to inform about rate-of-climb changes:

@@ -17,9 +17,10 @@ object Avionics {
 
   def main(args: Array[String]) {
     // Request plane-controls:
-    val control = Await.result(
-      (plane ? Plane.GiveMeControl).mapTo[ActorRef], 5.seconds
-    )
+//  val control = Await.result( (plane ? Plane.GiveMeControl).mapTo[ActorRef], 5.seconds )
+//
+    val control = Await.result( (plane ? Plane.GiveMainControl).mapTo[ActorRef], 5.seconds )
+
     // Take-off:
     system.scheduler.scheduleOnce(200.millis) {
       control ! ControlSurfaces.StickBack(1f)

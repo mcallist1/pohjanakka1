@@ -1,4 +1,8 @@
+package zzz.akka.avionics
 
+import akka.actor.SupervisorStrategy.{Escalate, Resume, Stop}
+import akka.actor.{ActorKilledException, ActorInitializationException, Actor}
+import scala.concurrent.duration._
 
 object IsolatedLifeCycleSupervisor {
   // Messages in case we want people to be able to wait for us to finish starting:
@@ -10,7 +14,7 @@ trait IsolatedLifeCycleSupervisor extends Actor {
   import IsolatedLifeCycleSupervisor._
 
   def receive = {
-  // Emit Started msg:
+  // Emit Started msg to those who are eagerly awaiting:
   case WaitForStart =>
     sender ! Started
   

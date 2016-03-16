@@ -25,17 +25,19 @@ So after creating the project using Activator (as described above), I just opene
 I have IDEA set up to use custom SBT-launcher rather than the one shipped by IntelliJ as part of the IDE.
 
 --
-You can find a repo on GitHub that has most of the source-code, but anyway I am typing in all the code from the print copy of the book, as that is the best way to learn. Also IMAO you can learn a lot about Scala (or many other languages) by using IntelliJ or Eclipse when typing in code, due to their nice "predictive input" and other features. I remember the days before Eclipse (and before Google-search/Stackoverflow), coding was much harder back then.
+You can find a repo on GitHub that has most of the source-code:
+https://github.com/danluu/akka-concurrency-wyatt
+...but anyway I am typing in all* the code from the print copy of the book, as that is the best way to learn. Also IMAO you can learn a lot about Scala (or many other languages) by using IntelliJ or Eclipse when typing in code, due to their nice "predictive input" and other features. I remember the days before Eclipse (and before Google-search/Stackoverflow), coding was much harder back then.
 
+[* By "all", I'm excluding snippets copy-paste-modified from stackoverflow when stuck].
 --
 Code-differences / any bugs I found between book publication date and spring 2016 (spring as in the season, not as in the popular DI-framework):
 
 [1] the syntax "system.shutdown()" for ActorSystem is deprecated, for me it resulted in compile-time failure (also in non-IDE mode), but IDE's replacement-suggestion: "system.terminate()" works fine.
 
-[2] ActorContext.actorFor - all variants are deprecated. See Stackoverflow for useful comments including an answer by Derek Wyatt, and see danluu's GitHub implementation for a workaround:
+[2] ActorContext.actorFor - all variants are deprecated, I have to replace them to keep the compiler happy. See Stackoverflow for useful comments including an answer by Derek Wyatt:
 http://stackoverflow.com/questions/22951549/how-do-you-replace-actorfor
-https://github.com/danluu/akka-concurrency-wyatt/blob/master/src/main/scala/Plane.scala
-One workaround could be to use .actorSelection instead... this could be one way (in receive-method of class Pilot:
+Simplest workaround is to use .actorSelection instead... for example (in receive-method of class Pilot):
 ```
 case ReadyToGo => 
       context.parent ! GiveMeControl
@@ -43,6 +45,69 @@ case ReadyToGo =>
       for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield copilot
       for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot
 ```
+There are some subtle things to consider here about Futures n so on (see stackoverflow-discussion), but anyway this substitution seems to work ok. Note that you will need to provide an implicit Timeout as well when using actorSelection, e.g. in the Pilot class:
+```implicit val timeout = Timeout(2.seconds)``` (and provide needed import-statements - a decent IDE will help you note and provide these (Eclipse has the excellent "Organise Imports", IntelliJ has reasonable support too); in this case you need ```import akka.util.Timeout``` and ```import scala.concurrent.duration._``` ). And the 2.seconds timeout value - I just picked 2 seconds, as a decision made in about, uhh, 2 seconds. 
 
-[3] The Autopilot class is not defined (at least not in Chapter 7), so comment out the following line in Plane.scala:
+[3] The Autopilot class is not defined (at least i didn't see it defined anywhere in the book), so comment out the following line in Plane.scala (and anywhere else an Autopilot reference occurs:
 ```val autopilot = context.actorOf(Props[Autopilot], "Autopilot")```
+
+[4] After working through Chapter 7, if you try to run the app (via Avionics.main-method), it will probably fail with something like:
+```
+[error] (run-main-0) java.lang.ClassCastException: Cannot cast zzz.akka.avionics.Plane$Controls to akka.actor.ActorRef
+java.lang.ClassCastException: Cannot cast zzz.akka.avionics.Plane$Controls to akka.actor.ActorRef
+```
+The reason that error occurs is because of the line in Avionics object:
+```val control = Await.result( (plane ? Plane.GiveMeControl).mapTo[ActorRef], 5.seconds )```
+which is Awaiting a result of type ActorRef, but is unable to do a .mapTo[ActorRef] on the non-ActorRef it is getting back from Plane.receive, which has just been changed to type Controls:
+```case GiveMeControl =>
+      log info "Plane giving control..."
+      sender ! Controls(controls) 
+```
+
+On the other hand, the book doesn't say "the app is still working", after all the refactoring continues into Chapter8. But if you want the app to run roughly as before, i.e. main method flies the plane for a few seconds, though now we also give our Pilot the controls for him/her to not use yet... 
+...then the following ad-hoc modifications will get you past the runtime-exception:
+In the Plane's companion object, add: ```case object GiveMainControl```
+In the Plane's receive method, add: 
+```case GiveMainControl =>
+         log info "Plane giving control to Main..."
+         sender ! controls
+```      
+And replace the original val control assignment in Avionic's main method with: 
+```val control = Await.result( (plane ? Plane.GiveMainControl).mapTo[ActorRef], 5.seconds )```
+
+"Pointless hacking!! You will be refactoring the code later anyway!!" Well yes, but I just like to avoid runtime exceptions... and you still get to see your Chapter7 debug-log output, so you proved that the runtime-exception wasn't due to the new Pilots...ok ok, ahl get me coat.
+(Since Avionics-object is not an Actor, so refactoring it just so that it would be able to match case Controls(controlSurfaces) in a receive-method seems sub-ideal, although I suppose that would be a possibility).
+
+[5] In Chapter8, when refactoring the Plane class, startPeople-method wants to use String variables when naming the Actors: pilot, copilot, (lead)attendant.
+But in Chapter7, Plane class only defined ActorRefs here. So if we want to keep the ActorRefs, but make the code a bit neater, we can declare vals for pilotName, copilotName, attendantName, and use them in two places, like so:
+```
+  val pilotName = config.getString(s"$cfgstr.pilotName")
+  val copilotName = config.getString(s"$cfgstr.copilotName")
+  val attendantName = config.getString(s"$cfgstr.leadAttendantName")
+
+  val pilot = context.actorOf(Props[Pilot], pilotName)
+  val copilot = context.actorOf(Props[Copilot], copilotName)
+  // val autopilot = context.actorOf(Props[Autopilot], "Autopilot")  //not implemented in book, at least not in Ch.7
+  val flightAttendant = context.actorOf(Props(LeadFlightAttendant()), attendantName)
+
+...
+
+  def startPeople(): Unit = {
+    val people = context.actorOf(
+      Props(new IsolatedStopSupervisor with OneForOneStrategyFactory {
+        // Subclass has to implement:
+        override def childStarter(): Unit = {
+          // These children get implicitly added to the hierarchy:
+          context.actorOf(Props(newPilot), pilotName)
+          context.actorOf(Props(newCopilot), copilotName)
+        }
+      }), "Pilots"
+    )
+    // Use default strategy for flight attendants i.e. restart indefinitely:
+    context.actorOf(Props(newLeadFlightAttendant), attendantName)
+    Await.result(people ? WaitForStart, 1.second)  // blocking ok for Plane start-up
+  }
+```  
+
+That is a bit neater. (First three of those lines also shown in danluu's implementation, I copy-pasted).
+
