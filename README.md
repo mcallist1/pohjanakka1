@@ -73,7 +73,8 @@ On the other hand, the book doesn't say "the app is still working", after all th
 ...then the following ad-hoc modifications will get you past the runtime-exception:
 In the Plane's companion object, add: ```case object GiveMainControl```
 In the Plane's receive method, add: 
-```case GiveMainControl =>
+```
+case GiveMainControl =>
          log info "Plane giving control to Main..."
          sender ! controls
 ```      
