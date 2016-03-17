@@ -47,7 +47,6 @@ case ReadyToGo =>
       context.parent ! GiveMeControl
       //copilot = context.actorFor("../" + copilotName)  //deprecated, use actorSelection instead:
       for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield copilot
-      for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot
 ```
 There are some subtle things to consider here about Futures n so on (see stackoverflow-discussion), but anyway this substitution seems to work ok. Note that you will need to provide an implicit Timeout as well when using actorSelection, e.g. in the Pilot class:
 ```implicit val timeout = Timeout(2.seconds)``` (and provide needed import-statements - a decent IDE will help you note and provide these (Eclipse has the excellent "Organise Imports", IntelliJ has reasonable support too); in this case you need ```import akka.util.Timeout``` and ```import scala.concurrent.duration._``` ). And the 2.seconds timeout value - I just picked 2 seconds, as a decision made in about, uhh, 2 seconds. 
@@ -120,7 +119,8 @@ That is a bit neater, and saves the print-book's implementation of startPeople a
 
 
 
+Zettel (fold in or delete later)
 
+( see  http://www.artima.com/forums/flat.jsp?forum=289&thread=349574 ), discussion about Plane errors etc.
 
-( see also http://www.artima.com/forums/flat.jsp?forum=289&thread=349574 ), dicussion about Plane errors.
-
+http://doc.akka.io/docs/akka/current/scala/actors.html  , version 2.4.2 latest stable March 2016

@@ -4,12 +4,15 @@ package zzz.akka.avionics
   * Created by murmeister on 12.3.2016.
   */
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, }
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import zzz.akka.avionics.IsolatedLifeCycleSupervisor.WaitForStart
 import akka.pattern.ask
-import scala.concurrent.Await
+import com.sun.org.apache.xml.internal.security.signature.MissingResourceFailureException
+
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 object Plane {
 
@@ -41,9 +44,9 @@ class Plane extends Actor with ActorLogging {
   val cfgstr = "zzz.akka.avionics.flightcrew"
 
   // Use Altimeter-companion-object's apply method to create the Actor:  //gets refactored away in Ch8 ??
-  val altimeter = context.actorOf(Props(Altimeter()), "Altimeter") // Altimeter's ActorRef now a child of Plane
+  //val altimeter = context.actorOf(Props(Altimeter()), "Altimeter") // Altimeter's ActorRef now a child of Plane
+  //val controls = context.actorOf(Props(new ControlSurfaces(altimeter)), "ControlSurfaces")
 
-  val controls = context.actorOf(Props(new ControlSurfaces(altimeter)), "ControlSurfaces")
 
   val config = context.system.settings.config
 
@@ -60,22 +63,20 @@ class Plane extends Actor with ActorLogging {
 
   //val flightAttendant = context.actorOf(Props(LeadFlightAttendant()), attendantName)  //gets refactored away in Ch8 ??
 
-  // Need an implicit Timeout when using ask ("?") method.
+  // Need an implicit Timeout when using ask ("?") method. And also for awaiting result of ActorSelection Future:
   implicit val askTimeout = Timeout(1.second)
 
   def actorForControls(name: String) = {
-    var controlsActor: ActorRef =  context.system.deadLetters
-    for (afc <- context.system.actorSelection("/user/Plane/Equipment/" + name).resolveOne()) yield ActorsLocated(afc)
-    println("controlsActor: " + controlsActor.toString())
+    val equipmentActorFuture: Future[ActorRef] = for (eaf <- context.actorSelection("Equipment/" + name).resolveOne()) yield eaf
+    val controlsActor: ActorRef = Await.result(equipmentActorFuture, 1.second)
+    //println("controlsActor: " + controlsActor.toString())
     controlsActor
   }
 
   def actorForPilots(name: String) = {
-    var pilotActor: ActorRef = context.system.deadLetters
-    println("HelloPlane.actorForPilotsA")
-    for (afc <- context.system.actorSelection("/user/Plane/Pilots/" + name).resolveOne()) yield pilotActor
-    println("HelloPlane.actorForPilotsB")
-    println("pilotActor: " + pilotActor.toString())
+    val pilotActorFuture: Future[ActorRef] = for (paf <- context.actorSelection("Pilots/" + name).resolveOne()) yield paf
+    val pilotActor: ActorRef = Await.result(pilotActorFuture, 1.second)
+    //println("pilotActor: " + pilotActor.toString())
     pilotActor
   }
 
@@ -143,10 +144,12 @@ class Plane extends Actor with ActorLogging {
   def receive = {
     case GiveMainControl =>
       log info "Plane giving control to Main..."
-      sender ! controls
+      //sender ! controls
+      sender ! actorForControls("ControlSurfaces")
     case GiveMeControl =>
       log info "Plane giving control..."
-      sender ! Controls(controls)
+      //sender ! Controls(controls)
+      sender ! Controls(actorForControls("ControlSurfaces"))
     case AltitudeUpdate(altitude) =>
       log.info(s"Altitude is now: $altitude")
   }
