@@ -13,14 +13,17 @@ object Avionics {
   // timeout needed for asking ("?") for the controls:
   implicit val timeout = Timeout(5.seconds)
   val system = ActorSystem("PlaneSimulation")
-  val plane = system.actorOf(Props[Plane], "Plane")
+  //val plane = system.actorOf(Props[Plane], "Plane")   //Ch7 version
+  println("HelloAvionicsA")
+  val plane = system.actorOf(Props(Plane()), "Plane")   //after Ch8 refactoring see artima-forum-discussion
+  println("HelloAvionicsB")
 
   def main(args: Array[String]) {
     // Request plane-controls:
 //  val control = Await.result( (plane ? Plane.GiveMeControl).mapTo[ActorRef], 5.seconds )
-//
+    println("HelloAvionicsC")
     val control = Await.result( (plane ? Plane.GiveMainControl).mapTo[ActorRef], 5.seconds )
-
+    println("HelloAvionicsD")
     // Take-off:
     system.scheduler.scheduleOnce(200.millis) {
       control ! ControlSurfaces.StickBack(1f)
