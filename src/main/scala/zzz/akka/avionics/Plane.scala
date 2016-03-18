@@ -110,11 +110,11 @@ class Plane extends Actor with ActorLogging {
         // Subclass has to implement:
         override def childStarter(): Unit = {
           // These children get implicitly added to the hierarchy:
-          println("HelloPlane.startPeople.childStarterA")
+
           context.actorOf(Props(newPilot(plane, controls, altimeter)), pilotName)
-          println("HelloPlane.startPeople.childStarterB")
+
           context.actorOf(Props(newCopilot(plane, altimeter)), copilotName)
-          println("HelloPlane.startPeople.childStarterC")
+
           //context.actorOf(Props(newPilot(plane, autopilot, controls, altimeter)), pilotName)   // Autopilot not implemented
           //context.actorOf(Props(newCopilot(plane, autopilot, altimeter)), copilotName)         // Autopilot not implemented
         }
@@ -139,7 +139,7 @@ class Plane extends Actor with ActorLogging {
     startPeople()
     // Bootstrap the rest of the ActorSystem:
     actorForControls("Altimeter") ! RegisterListener(self)
-    println("HelloPlane.preStartA")
+    //println("HelloPlane.preStartA")
     actorForPilots(pilotName) ! ReadyToGo
     actorForPilots(copilotName) ! ReadyToGo
   }

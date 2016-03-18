@@ -6,8 +6,10 @@ package zzz.akka.avionics
   * http://stackoverflow.com/questions/22951549/how-do-you-replace-actorfor
   */
 import akka.actor.{Actor, ActorRef}
-import scala.concurrent.Await
+
+import scala.concurrent.{Await, Future}
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -46,9 +48,9 @@ class Pilot(plane: ActorRef, var controls: ActorRef, altimeter: ActorRef)
       // context.parent ! GiveMeControl    // Ch8 refactored this out, as the new parent is not Plane but IsolatedStopSupervisor
 
       //copilot = context.actorFor("../" + copilotName)  //deprecated, use actorSelection instead:
-      var cpl: ActorRef = context.system.deadLetters
-      for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield cpl
-      copilot = cpl
+      var copilotFuture: Future[ActorRef] = for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield cop
+      copilot = Await.result(copilotFuture, 1.second)
+      //println("copilot after Await.result: " + copilot)
       //for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot     // Autopilot not implemented
 
     case Controls(controlSurfaces) =>
@@ -71,9 +73,9 @@ class Copilot(plane: ActorRef, altimeter: ActorRef) extends Actor {
   def receive = {
     case ReadyToGo =>
       //pilot = context.actorFor("../" + pilotName)  //deprecated, use actorSelection instead:
-      var pil: ActorRef = context.system.deadLetters
-      for (plt <- context.actorSelection("../" + pilotName).resolveOne()) yield pil
-      pilot = pil
+      var pilotFuture: Future[ActorRef] = for (pil <- context.actorSelection("../" + pilotName).resolveOne()) yield pil
+      pilot = Await.result(pilotFuture, 1.second)
+      //println("pilot is:" + pilot)
       //for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot     // Autopilot not implemented
   }
 }

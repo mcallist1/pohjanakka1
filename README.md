@@ -38,18 +38,20 @@ Code-differences / any bugs I found between book publication date and spring 201
 
 [1] the syntax "system.shutdown()" for ActorSystem is deprecated, for me it resulted in compile-time failure (also in non-IDE mode), but IDE's replacement-suggestion: "system.terminate()" works fine.
 
-[2] ActorContext.actorFor - all variants are deprecated, I have to replace them to keep the compiler happy. See Stackoverflow for useful comments including an answer by Derek Wyatt:
+[2] ActorContext.actorFor - all variants of actorFor() are deprecated, so we have to replace them to keep the compiler happy. See Stackoverflow for useful comments, including an answer by Derek Wyatt:
 http://stackoverflow.com/questions/22951549/how-do-you-replace-actorfor
 
-Simplest workaround is to use .actorSelection instead... for example (in receive-method of class Pilot):
+Simplest workaround is to use actorSelection() instead... for example (in receive-method of class Pilot):
 ```
 case ReadyToGo => 
-      context.parent ! GiveMeControl
-      //copilot = context.actorFor("../" + copilotName)  //deprecated, use actorSelection instead:
-      for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield copilot
+...
+      var copilotFuture: Future[ActorRef] = for (cop <- context.actorSelection("../" + copilotName).resolveOne()) yield cop
+      copilot = Await.result(copilotFuture, 1.second)
+      //println("copilot after Await.result: " + copilot)
 ```
-There are some subtle things to consider here about Futures n so on (see stackoverflow-discussion), but anyway this substitution seems to work ok. Note that you will need to provide an implicit Timeout as well when using actorSelection, e.g. in the Pilot class:
+There are some subtle things to consider here about Futures n so on (see stackoverflow-discussion), but anyway this substitution seems to work ok. Note that you will need to provide an implicit Timeout as well when using actorSelection(), e.g. in the Pilot class:
 ```implicit val timeout = Timeout(2.seconds)``` (and provide needed import-statements - a decent IDE will help you note and provide these (Eclipse has the excellent "Organise Imports", IntelliJ has reasonable support too); in this case you need ```import akka.util.Timeout``` and ```import scala.concurrent.duration._``` ). And the 2.seconds timeout value - I just picked 2 seconds, as a decision made in about, uhh, 2 seconds. 
+Or, as in the example just now, you can use the "pattern" of: use for...yield to get a Future[ActorRef]... then use Await.result specifying a timeout explicitly. In this case you also need relevant imports: ```import scala.concurrent.{Await, Future}``` 
 
 [3] The Autopilot class is not defined (at least i didn't see it defined anywhere in the book), so comment out the following line in Plane.scala (and anywhere else an Autopilot reference occurs:
 ```val autopilot = context.actorOf(Props[Autopilot], "Autopilot")```
