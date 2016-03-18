@@ -5,10 +5,11 @@ package zzz.akka.avionics
   * See also this discussion:
   * http://stackoverflow.com/questions/22951549/how-do-you-replace-actorfor
   */
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorRef, Terminated}
 
 import scala.concurrent.{Await, Future}
 import akka.util.Timeout
+import zzz.akka.avionics.Plane.GiveMeControl
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -77,5 +78,9 @@ class Copilot(plane: ActorRef, altimeter: ActorRef) extends Actor {
       pilot = Await.result(pilotFuture, 1.second)
       //println("pilot is:" + pilot)
       //for (aut <- context.actorSelection("../Autopilot").resolveOne()) yield autopilot     // Autopilot not implemented
+      context.watch(pilot)
+    case Terminated(_) =>
+      // there is only one pilot and we only need to know s/he was terminated
+      plane ! GiveMeControl
   }
 }

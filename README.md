@@ -31,7 +31,7 @@ https://github.com/danluu/akka-concurrency-wyatt
 
 (* By "all", I'm excluding snippets copy-paste-modified from stackoverflow when stuck).
 
-Note that since I didn't make the effort to structure this repo with e.g. one branch per chapter (at least not initially, maybe make a new branches from Ch9 onwards), the code here is just the current snapshot of how far I got through the book (of course you could look back through the commit history to master-branch, but I usually pushed changes because it was sleep-time, and not because I had completed a chapter). So it's better to code your code and look at this repo and danluu's repo for hints, and look at the debug-notes below.
+Note that since I didn't make the effort to structure this repo with e.g. one branch per chapter (at least not initially, maybe I should make chapter-branches from Ch9 onwards), the code here is just the current snapshot of how far I got through the book (of course you could look back through the commit history to master-branch, but I usually pushed changes because it was sleep-time, and not because I had completed a chapter). So it's better to code your code and look at this repo and danluu's repo for hints, and look at the debug-notes below.
 
 ---
 Code-differences / any bugs I found between book publication date and spring 2016 (spring as in the season, not as in the popular DI-framework):
@@ -49,11 +49,13 @@ case ReadyToGo =>
       copilot = Await.result(copilotFuture, 1.second)
       //println("copilot after Await.result: " + copilot)
 ```
-There are some subtle things to consider here about Futures n so on (see stackoverflow-discussion), but anyway this substitution seems to work ok. Note that you will need to provide an implicit Timeout as well when using actorSelection(), e.g. in the Pilot class:
+There are some subtle things to consider here about Futures n so on (see stackoverflow-discussion), but anyway this substitution seems to work ok. Note that you will need to provide an implicit Timeout as well when using resolveOne() with actorSelection(), e.g. in the Pilot class:
 ```implicit val timeout = Timeout(2.seconds)``` (and provide needed import-statements - a decent IDE will help you note and provide these (Eclipse has the excellent "Organise Imports", IntelliJ has reasonable support too); in this case you need ```import akka.util.Timeout``` and ```import scala.concurrent.duration._``` ). And the 2.seconds timeout value - I just picked 2 seconds, as a decision made in about, uhh, 2 seconds. 
 Or, as in the example just now, you can use the "pattern" of: use for...yield to get a Future[ActorRef]... then use Await.result specifying a timeout explicitly. In this case you also need relevant imports: ```import scala.concurrent.{Await, Future}``` 
+A variant of the example as a one-liner replacement for actorFor() (without needing to import or mention ```scala.concurrent.Future```) goes like this (e.g. in PilotsSpec, when we want to message Copilot with "ReadyToGo"): 
+```Await.result(for (cop <- system.actorSelection(copilotPath).resolveOne()) yield cop, 2.seconds) ! Pilots.ReadyToGo``` 
 
-[3] The Autopilot class is not defined (at least i didn't see it defined anywhere in the book), so comment out the following line in Plane.scala (and anywhere else an Autopilot reference occurs:
+[3] The Autopilot class is not defined (at least i didn't see it defined anywhere in the book), so comment out the following line in Plane.scala (and make relevant adjustments anywhere else an Autopilot reference occurs, e.g. in method parameter lists):
 ```val autopilot = context.actorOf(Props[Autopilot], "Autopilot")```
 
 [4] After working through Chapter7, if you try to run the app (via Avionics.main-method), it will probably fail with something like:
