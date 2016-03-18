@@ -1,7 +1,7 @@
 package zzz.akka.avionics
 
 /**
-  * Created by murmeister on 12.3.2016.
+  * Created by murmelssonic on 12.3.2016.
   */
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -54,9 +54,8 @@ class Plane extends Actor with ActorLogging {
   val copilotName = config.getString(s"$cfgstr.copilotName")
   val attendantName = config.getString(s"$cfgstr.leadAttendantName")
 
-  println("PlaneA")
   //val pilot = context.actorOf(Props[Pilot], pilotName)     //gets refactored away in Ch8 ??
-  println("PlaneB")
+  //println("PlaneB")
   //val copilot = context.actorOf(Props[Copilot], copilotName)    //gets refactored away in Ch8 ??
 
   // val autopilot = context.actorOf(Props[Autopilot], "Autopilot")  //not implemented in book, at least not in Ch.7
@@ -66,6 +65,10 @@ class Plane extends Actor with ActorLogging {
   // Need an implicit Timeout when using ask ("?") method. And also for awaiting result of ActorSelection Future:
   implicit val askTimeout = Timeout(1.second)
 
+  // We can wait around for a result, so long as all the calls to actorForControls and actorForPilots are being made
+  // during application set up or other occasional message, this is ok. Currently these methods are called by:
+  // preStart() (and first by sub-call also to startPeople());
+  // when responding to messages: GiveMainControl, GiveMeControl
   def actorForControls(name: String) = {
     val equipmentActorFuture: Future[ActorRef] = for (eaf <- context.actorSelection("Equipment/" + name).resolveOne()) yield eaf
     val controlsActor: ActorRef = Await.result(equipmentActorFuture, 1.second)
