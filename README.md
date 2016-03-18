@@ -34,14 +34,15 @@ https://github.com/danluu/akka-concurrency-wyatt
 Note that since I didn't make the effort to structure this repo with e.g. one branch per chapter (at least not initially, maybe I should make chapter-branches from Ch9 onwards), the code here is just the current snapshot of how far I got through the book (of course you could look back through the commit history to master-branch, but I usually pushed changes because it was sleep-time, and not because I had completed a chapter). So it's better to code your code and look at this repo and danluu's repo for hints, and look at the debug-notes below.
 
 ---
-Code-differences / any bugs I found between book publication date and spring 2016 (spring as in the season, not as in the popular DI-framework):
+Workarounds for code-differences (and any other minor bug-fix suggestions) found between book (published in 2013) and coding in spring 2016 (spring as in the season, not as in the popular DI-framework):
 
 [1] the syntax "system.shutdown()" for ActorSystem is deprecated, for me it resulted in compile-time failure (also in non-IDE mode), but IDE's replacement-suggestion: "system.terminate()" works fine.
+
 
 [2] ActorContext.actorFor - all variants of actorFor() are deprecated, so we have to replace them to keep the compiler happy. See Stackoverflow for useful comments, including an answer by Derek Wyatt:
 http://stackoverflow.com/questions/22951549/how-do-you-replace-actorfor
 
-Simplest workaround is to use actorSelection() instead... for example (in receive-method of class Pilot):
+The workaround is to use actorSelection() instead... for example (in receive-method of class Pilot):
 ```
 case ReadyToGo => 
 ...
@@ -50,13 +51,18 @@ case ReadyToGo =>
       //println("copilot after Await.result: " + copilot)
 ```
 There are some subtle things to consider here about Futures n so on (see stackoverflow-discussion), but anyway this substitution seems to work ok. Note that you will need to provide an implicit Timeout as well when using resolveOne() with actorSelection(), e.g. in the Pilot class:
-```implicit val timeout = Timeout(2.seconds)``` (and provide needed import-statements - a decent IDE will help you note and provide these (Eclipse has the excellent "Organise Imports", IntelliJ has reasonable support too); in this case you need ```import akka.util.Timeout``` and ```import scala.concurrent.duration._``` ). And the 2.seconds timeout value - I just picked 2 seconds, as a decision made in about, uhh, 2 seconds. 
-Or, as in the example just now, you can use the "pattern" of: use for...yield to get a Future[ActorRef]... then use Await.result specifying a timeout explicitly. In this case you also need relevant imports: ```import scala.concurrent.{Await, Future}``` 
+```implicit val timeout = Timeout(2.seconds)``` (and provide needed import-statements - a decent IDE will help you note and provide these (Eclipse has the excellent "Organise Imports", IntelliJ has reasonable support too); in this case you need ```import akka.util.Timeout``` , ```import scala.concurrent.Await``` , and  ```import scala.concurrent.duration._``` ). And the 2.seconds timeout value - I just picked 2 seconds, as a decision made in about, uhh, 2 seconds. 
+
+Or, as in the example just now, you can use the "pattern" of: use for...yield to get a Future[ActorRef]... then use Await.result specifying a timeout explicitly. In this case you also need relevant import for Future as well as Await: ```import scala.concurrent.{Await, Future}``` 
+
 A variant of the example as a one-liner replacement for actorFor() (without needing to import or mention ```scala.concurrent.Future```) goes like this (e.g. in PilotsSpec, when we want to message Copilot with "ReadyToGo"): 
+
 ```Await.result(for (cop <- system.actorSelection(copilotPath).resolveOne()) yield cop, 2.seconds) ! Pilots.ReadyToGo``` 
+
 
 [3] The Autopilot class is not defined (at least i didn't see it defined anywhere in the book), so comment out the following line in Plane.scala (and make relevant adjustments anywhere else an Autopilot reference occurs, e.g. in method parameter lists):
 ```val autopilot = context.actorOf(Props[Autopilot], "Autopilot")```
+
 
 [4] After working through Chapter7, if you try to run the app (via Avionics.main-method), it will probably fail with something like:
 ```
@@ -72,21 +78,23 @@ case GiveMeControl =>
       sender ! Controls(controls) 
 ```
 
-On the other hand, the book doesn't say "the app is still working", after all the refactoring continues into Chapter8. But if you want the app to run roughly as before, i.e. main method flies the plane for a few seconds, though now we also give our Pilot the controls for him/her to not use yet... 
-...then the following ad-hoc modifications will get you past the runtime-exception:
+On the other hand, the book doesn't say "the app is still working" - after all, the refactoring continues on through Chapter8. But if you want the app to run roughly as before in Chapters 5 and 6, i.e. the main method flies the plane for a few seconds, though now we also try to give our Pilot the controls for him/her to not fly the plane yet... 
+...then the following ad-hoc modifications will get you past that runtime-ClassCastException:
+
 In the Plane's companion object, add: ```case object GiveMainControl```
-In the Plane's receive method, add: 
+
+In the Plane's receive()-method, add: 
 ```
 case GiveMainControl =>
          log info "Plane giving control to Main..."
          sender ! controls
 ```      
-And replace the original val control assignment in Avionic's main method with:
+And then you swap in the ask-message GiveMainControl to Avionic's main method:
  
 ```val control = Await.result( (plane ? Plane.GiveMainControl).mapTo[ActorRef], 5.seconds )```
 
-"Pointless hacking!! You will be refactoring the code later anyway!!" Well yes, but I just like to avoid runtime exceptions... and you still get to see your Chapter7 debug-log output, so you proved that the runtime-exception wasn't due to the new Pilots...ok ok, ahl get me coat.
-(Since Avionics-object is not an Actor, so refactoring it just so that it would be able to match case Controls(controlSurfaces) in a receive-method seems sub-ideal, although I suppose that would be a possibility).
+"Pointless hacking!! You'll be refactoring the code later anyway!!" Well yes, but I just like to avoid runtime exceptions... and you still get to see your Chapter7 debug-log output, so you proved that the runtime-exception wasn't due to the new Pilots...ok ok, ahl get me coat.
+(Since Avionics-object is not an Actor, so refactoring it to extend Actor just so that it would be able to match case Controls(controlSurfaces) in a new Actor.receive()-method seems sub-ideal, although I suppose that would be a possibility).
 
 [5] In Chapter8, when refactoring the Plane class, startPeople-method wants to use String variables when naming the Actors: pilot, copilot, (lead)attendant.
 But in Chapter7, Plane class only defined ActorRefs here. So if we want to keep the ActorRefs, but make the code a bit neater, we can declare vals for pilotName, copilotName, attendantName, and use them in two places, like so:
