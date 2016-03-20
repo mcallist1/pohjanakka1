@@ -9,6 +9,7 @@ import akka.util.Timeout
 import zzz.akka.avionics.IsolatedLifeCycleSupervisor.WaitForStart
 import akka.pattern.ask
 import com.sun.org.apache.xml.internal.security.signature.MissingResourceFailureException
+import zzz.akka.avionics.HeadingIndicator.HeadingUpdate
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
@@ -25,7 +26,10 @@ object Plane {
   // Response to GiveMeControl message:
   case class Controls(controls: ActorRef)
 
-  def apply() = new Plane with AltimeterProvider with PilotProvider with LeadFlightAttendantProvider
+  def apply() = new Plane with AltimeterProvider
+                          with PilotProvider
+                          with LeadFlightAttendantProvider
+                          with HeadingIndicatorProvider
 }
 
 // The Plane has the controls, so someone can get the controls by sending a GiveMeControl message
@@ -34,7 +38,8 @@ object Plane {
 class Plane extends Actor with ActorLogging {
   this: AltimeterProvider
     with PilotProvider
-    with LeadFlightAttendantProvider =>
+    with LeadFlightAttendantProvider
+    with HeadingIndicatorProvider =>
 
   import Altimeter._
   import EventSource._
@@ -89,9 +94,10 @@ class Plane extends Actor with ActorLogging {
         // Subclass has to implement:
         override def childStarter(): Unit = {
           val alt = context.actorOf(Props(newAltimeter), "Altimeter")
+          val headInd =  context.actorOf(Props(newHeadingIndicator), "HeadingIndicator")  //Ch9
           // These children get implicitly added to the hierarchy:
           // context.actorOf(Props(newAutopilot), "Autopilot")  // Autopilot not implemented
-          context.actorOf(Props(new ControlSurfaces(alt)), "ControlSurfaces")
+          context.actorOf(Props(new ControlSurfaces(alt, headInd)), "ControlSurfaces")
         }
       }), "Equipment"
     )
@@ -105,6 +111,7 @@ class Plane extends Actor with ActorLogging {
     val controls = actorForControls("ControlSurfaces")
     // val autopilot = actorForControls("Autopilot")    // Autopilot not implemented
     val altimeter = actorForControls("Altimeter")
+    val headInd = actorForControls("HeadingIndicator")  //Ch9
     val people = context.actorOf(
       Props(new IsolatedStopSupervisor with OneForOneStrategyFactory {
         // Subclass has to implement:
@@ -128,17 +135,13 @@ class Plane extends Actor with ActorLogging {
   override def preStart(): Unit = {
     import EventSource.RegisterListener
     import Pilots.ReadyToGo
-    //Ch7 implementation, refactored out in Ch8
-    //altimeter ! RegisterListener(self)
-    //List(pilot, copilot) foreach {
-    //    _ ! Pilots.ReadyToGo
-    //}
 
     // Get the children started. Starting order matters:
     startEquipment()
     startPeople()
     // Bootstrap the rest of the ActorSystem:
     actorForControls("Altimeter") ! RegisterListener(self)
+    actorForControls("HeadingIndicator") ! RegisterListener(self)  //Ch9
     //println("HelloPlane.preStartA")
     actorForPilots(pilotName) ! ReadyToGo
     actorForPilots(copilotName) ! ReadyToGo
@@ -154,6 +157,8 @@ class Plane extends Actor with ActorLogging {
       //sender ! Controls(controls)
       sender ! Controls(actorForControls("ControlSurfaces"))
     case AltitudeUpdate(altitude) =>
-      log.info(s"Altitude is now: $altitude")
+      log.info(f"Altitude is now: $altitude%.2f")
+    case HeadingUpdate(heading) =>
+      log.info(f"Now heading in direction: $heading%.2f")
   }
 }

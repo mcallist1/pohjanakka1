@@ -22,7 +22,7 @@ trait PilotProvider {
 
 object Pilots {
   case object ReadyToGo
-  case object RelinquishControl
+  case object RelinquishControl      //not defined by Ch9, maybe never defined?
 }
 
 /**

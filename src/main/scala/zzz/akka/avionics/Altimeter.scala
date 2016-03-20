@@ -8,13 +8,10 @@ trait AltimeterProvider {
 }
 
 object Altimeter {
-
   // Received by Altimeter to inform about rate-of-climb changes:
   case class RateChange(amount: Float)
-
   // Sent by Altimeter to inform about current altitude:
   case class AltitudeUpdate(altitude: Double)
-
   // the apply-method constructs the Altimeter-Actor with an appropriate EventSource 'trait-implementation':
   def apply() = new Altimeter with ProductionEventSource
 }
@@ -54,7 +51,7 @@ class Altimeter extends Actor with ActorLogging {
     case RateChange(amount) =>
       // Truncate range to [-1, 1] before multiplying:
       rateOfClimb = amount.min(1.0f).max(-1.0f) * maxRateOfClimb //i.e. in range [-1500, 1500]
-      log info s"Altimeter set rate-of-climb to $rateOfClimb."
+      log info f"Altimeter set rate-of-climb to $rateOfClimb%.2f."
 
     // Calculate new altitude:
     case Tick =>

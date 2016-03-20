@@ -17,6 +17,7 @@ object Avionics {
   val plane = system.actorOf(Props(Plane()), "Plane")   //after Ch8 refactoring see artima-forum-discussion
 
   def main(args: Array[String]) {
+    // TODO Ch9 do some StickLeft, StickRight
     // Request plane-controls:
     val control = Await.result( (plane ? Plane.GiveMainControl).mapTo[ActorRef], 5.seconds )
     println("mainCtrl: " + control.toString())
@@ -28,16 +29,32 @@ object Avionics {
     system.scheduler.scheduleOnce(1.seconds) {
       control ! ControlSurfaces.StickBack(0f)
     }
-    // Climb:
+    // (Ch9) Bank left:
+    system.scheduler.scheduleOnce(2.seconds) {
+      control ! ControlSurfaces.StickLeft(0.5f)
+    }
+    // (Ch9) Straight ahead:
     system.scheduler.scheduleOnce(3.seconds) {
+      control ! ControlSurfaces.StickLeft(0f)
+    }
+    // Climb:
+    system.scheduler.scheduleOnce(4.seconds) {
       control ! ControlSurfaces.StickBack(0.5f)
     }
     // Level-out:
-    system.scheduler.scheduleOnce(4.seconds) {
+    system.scheduler.scheduleOnce(5.seconds) {
       control ! ControlSurfaces.StickBack(0f)
     }
+    // (Ch9) Bank left:
+    system.scheduler.scheduleOnce(6.seconds) {
+      control ! ControlSurfaces.StickRight(1.0f)
+    }
+    // (Ch9) Straight ahead:
+    system.scheduler.scheduleOnce(7.seconds) {
+      control ! ControlSurfaces.StickRight(0f)
+    }
     // Shut-down:
-    system.scheduler.scheduleOnce(5.seconds) {
+    system.scheduler.scheduleOnce(8.seconds) {
       system.terminate()
     }
   }
