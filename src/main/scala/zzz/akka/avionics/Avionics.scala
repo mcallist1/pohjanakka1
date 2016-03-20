@@ -14,13 +14,12 @@ object Avionics {
   implicit val timeout = Timeout(5.seconds)
   val system = ActorSystem("PlaneSimulation")
   //val plane = system.actorOf(Props[Plane], "Plane")   //Ch7 version
-  val plane = system.actorOf(Props(Plane()), "Plane")   //after Ch8 refactoring see artima-forum-discussion
+  val plane = system.actorOf(Props(Plane()), "Plane")   //after Ch8 refactoring see Artima-forum-discussion
 
   def main(args: Array[String]) {
-    // TODO Ch9 do some StickLeft, StickRight
     // Request plane-controls:
     val control = Await.result( (plane ? Plane.GiveMainControl).mapTo[ActorRef], 5.seconds )
-    println("mainCtrl: " + control.toString())
+    //println("mainCtrl: " + control.toString())
     // Take-off:
     system.scheduler.scheduleOnce(200.millis) {
       control ! ControlSurfaces.StickBack(1f)

@@ -89,6 +89,7 @@ class Plane extends Actor with ActorLogging {
   }
 
   def startEquipment(): Unit = {
+    val plane = self    // just to make it clear that the 1st parameter to ControlSurfaces-constructor is a Plane
     val controls = context.actorOf(
       Props(new IsolatedResumeSupervisor with OneForOneStrategyFactory {
         // Subclass has to implement:
@@ -97,7 +98,7 @@ class Plane extends Actor with ActorLogging {
           val headInd =  context.actorOf(Props(newHeadingIndicator), "HeadingIndicator")  //Ch9
           // These children get implicitly added to the hierarchy:
           // context.actorOf(Props(newAutopilot), "Autopilot")  // Autopilot not implemented
-          context.actorOf(Props(new ControlSurfaces(alt, headInd)), "ControlSurfaces")
+          context.actorOf(Props(new ControlSurfaces(plane, alt, headInd)), "ControlSurfaces")
         }
       }), "Equipment"
     )

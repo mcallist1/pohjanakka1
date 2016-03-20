@@ -31,7 +31,7 @@ https://github.com/danluu/akka-concurrency-wyatt
 
 (* By "all", I'm excluding snippets copy-paste-modified from stackoverflow when stuck).
 
-Until working through Chapter8, I hadn't make the effort to structure this repo with one branch per chapter. So branch Chapter8 contains all code from Chapters5-8, and then the ChapterX contains the code by the end of ChapterX. Anyway it's better to code your code yourself, and only look at this repo and/or danluu's repo when you're stuck. Reading the debug-notes below might be useful in any case.
+Until working through Chapter8, I hadn't make the effort to structure this repo with one branch per chapter. So branch Chapter8 contains all code from Chapters5-8, and from then on branch ChapterN contains the code by the end of ChapterN. Anyway it's better to code your code yourself, and only look at this repo and/or danluu's repo when you're stuck. Reading the debug-notes below might be useful in any case.
 
 ---
 Workarounds for code-differences (and any other minor bug-fix suggestions) found between book (published in 2013) and coding in spring 2016 (spring as in the season, not as in the popular DI-framework):
